@@ -1,0 +1,35 @@
+---
+import "../styles/admin.css";
+
+interface Props {
+  title: string;
+  activeNav?: "briefs" | "submissions";
+}
+const { title, activeNav } = Astro.props;
+const path = Astro.url.pathname;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{title} — TSN Admin</title>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <a href="/admin/briefs" class="admin-logo">TSN ADMIN</a>
+      <nav class="admin-nav">
+        <a href="/admin/briefs" class={path.startsWith("/admin/briefs") ? "active" : ""}>Briefs</a>
+        <a href="/admin/submissions" class={path.startsWith("/admin/submissions") ? "active" : ""}>Submissions</a>
+        <a href="/" target="_blank" rel="noopener">View Site ↗</a>
+        <a href="/admin/logout">Logout</a>
+      </nav>
+    </div>
+  </header>
+  <main class="admin-main">
+    <slot />
+  </main>
+</body>
+</html>

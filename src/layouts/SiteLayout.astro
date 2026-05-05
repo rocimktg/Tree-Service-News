@@ -1,0 +1,109 @@
+---
+import "../styles/site.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  canonicalPath?: string;
+  activeNav?: string;
+}
+
+const {
+  title,
+  description = "Curated gear updates, safety notes, storm response news, business trends, and marketing insights for tree care professionals.",
+  canonicalPath,
+  activeNav,
+} = Astro.props;
+
+const path = Astro.url.pathname;
+const siteUrl = import.meta.env.SITE || "https://treeservicenews.com";
+const canonical = canonicalPath ? `${siteUrl}${canonicalPath}` : `${siteUrl}${path}`;
+
+const today = new Date().toLocaleDateString("en-US", {
+  weekday: "long", month: "long", day: "numeric", year: "numeric",
+});
+
+function isActive(href: string) {
+  if (href === "/") return path === "/";
+  return path.startsWith(href);
+}
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} — Tree Service News</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="Tree Service News" />
+  <meta property="og:title" content={`${title} — Tree Service News`} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:type" content="website" />
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+</head>
+<body>
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="masthead-eyebrow">
+        <span class="masthead-date">{today}</span>
+        <span>The front page for tree service companies.</span>
+      </div>
+      <div class="masthead-title">
+        <h1><a href="/" style="text-decoration:none; color:inherit"><img src="/logo.png" alt="Tree Service News" style="max-height:200px; width:auto; display:block; margin:0 auto;" /></a></h1>
+        <p class="masthead-tagline">Tree Service News curates useful stories, safety reminders, gear updates, storm coverage, and business ideas for tree care professionals.</p>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="site-nav-inner">
+      <a href="/"                         class={isActive("/") && path === "/" ? "active" : ""}>News</a>
+      <a href="/categories/gear"          class={isActive("/categories/gear")          ? "active" : ""}>Gear</a>
+      <a href="/categories/safety"        class={isActive("/categories/safety")        ? "active" : ""}>Safety</a>
+      <a href="/categories/storm-response" class={isActive("/categories/storm-response") ? "active" : ""}>Storms</a>
+      <a href="/categories/business"      class={isActive("/categories/business")      ? "active" : ""}>Business</a>
+      <a href="/categories/marketing"     class={isActive("/categories/marketing")     ? "active" : ""}>Marketing</a>
+      <a href="/submit-a-story" class="nav-submit">Submit a Story</a>
+    </div>
+  </nav>
+
+  <!-- Page content -->
+  <slot />
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="/">News</a>
+        <a href="/categories/gear">Gear</a>
+        <a href="/categories/safety">Safety</a>
+        <a href="/categories/storm-response">Storms</a>
+        <a href="/categories/business">Business</a>
+        <a href="/categories/marketing">Marketing</a>
+        <a href="/categories/climbing">Climbing</a>
+        <a href="/categories/insurance">Insurance</a>
+        <a href="/categories/hiring">Hiring</a>
+        <a href="/submit-a-story">Submit a Story</a>
+        <a href="/advertise">Advertise</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+      </nav>
+      <div class="footer-bottom">
+        <span>Tree Service News is built and maintained by <a href="https://treewebdesign.com" target="_blank" rel="noopener">Tree Web Design</a>.</span>
+        <span>&copy; {new Date().getFullYear()} Tree Service News</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

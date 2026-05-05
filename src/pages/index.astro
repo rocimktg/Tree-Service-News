@@ -1,0 +1,195 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { sql } from "../lib/db.mjs";
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const [featuredRows, latestRows, categories] = await Promise.all([
+  sql`
+    SELECT l.*, c.name AS category_name, c.slug AS category_slug, c.label AS category_label
+    FROM links l JOIN categories c ON l.category_id = c.id
+    WHERE l.status = 'published' AND l.is_featured = TRUE
+    ORDER BY l.published_at DESC LIMIT 1
+  `,
+  sql`
+    SELECT l.*, c.name AS category_name, c.slug AS category_slug, c.label AS category_label
+    FROM links l JOIN categories c ON l.category_id = c.id
+    WHERE l.status = 'published'
+    ORDER BY l.published_at DESC LIMIT 12
+  `,
+  sql`SELECT * FROM categories ORDER BY name ASC`,
+]);
+
+const topStory    = featuredRows[0] ?? latestRows[0] ?? null;
+const latestBriefs = latestRows.filter((b: any) => b.id !== topStory?.id);
+
+// ── Newsletter form ───────────────────────────────────────────────────────────
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let nlSuccess = false;
+let nlError   = "";
+
+if (Astro.request.method === "POST") {
+  const form  = await Astro.request.formData();
+  const email = form.get("email")?.toString().trim() ?? "";
+
+  if (!email || !EMAIL_RE.test(email)) {
+    nlError = "Please enter a valid email address.";
+  } else {
+    try {
+      await sql`
+        INSERT INTO newsletter_signups (email, source_page)
+        VALUES (${email}, 'homepage')
+        ON CONFLICT (email) DO NOTHING
+      `;
+      nlSuccess = true;
+    } catch {
+      nlError = "Something went wrong. Please try again.";
+    }
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function truncate(text: string | null, max: number) {
+  if (!text) return "";
+  return text.length <= max ? text : text.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
+function fmtDate(d: Date | string | null) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+---
+
+<SiteLayout title="Industry News for Tree Service Companies">
+
+  <main class="site-main">
+
+    <!-- ── Top Story ──────────────────────────────────────────────────────── -->
+
+    {topStory ? (
+      <section class="top-story">
+        <div class="top-story-eyebrow">Top Story</div>
+        <div class="top-story-card">
+          <a href={`/categories/${topStory.category_slug}`} class="tag">{topStory.category_label}</a>
+          <h2><a href={`/briefs/${topStory.slug}`}>{topStory.title}</a></h2>
+          {topStory.summary && <p class="summary">{topStory.summary}</p>}
+          {topStory.tsn_take && (
+            <div class="tsn-take">
+              <strong>TSN Take</strong>
+              {topStory.tsn_take}
+            </div>
+          )}
+          <div class="card-actions">
+            <a href={`/briefs/${topStory.slug}`} class="btn btn-primary">Read Briefing</a>
+            <a href={topStory.source_url} class="btn btn-outline" target="_blank" rel="noopener noreferrer">
+              Read Source ↗
+            </a>
+          </div>
+        </div>
+      </section>
+    ) : (
+      <div class="empty-state mb-3">
+        <p>No published briefs yet. Check back soon — or <a href="/admin/briefs/new">add one in the admin</a>.</p>
+      </div>
+    )}
+
+    <!-- ── Latest Industry Links ──────────────────────────────────────────── -->
+
+    {latestBriefs.length > 0 && (
+      <section>
+        <div class="section-head">
+          <h2>Latest Industry Links</h2>
+        </div>
+        <div class="briefs-grid">
+          {latestBriefs.map((b: any) => (
+            <article class="brief-card">
+              <a href={`/categories/${b.category_slug}`} class="tag">{b.category_label}</a>
+              <h3><a href={`/briefs/${b.slug}`}>{b.title}</a></h3>
+              {b.summary && <p class="summary">{truncate(b.summary, 220)}</p>}
+              {b.tsn_take && <p class="tsn-take">{truncate(b.tsn_take, 160)}</p>}
+              <div class="brief-card-footer">
+                <span class="source-name">{b.source_name ? `Source: ${b.source_name}` : fmtDate(b.published_at)}</span>
+                <div class="card-actions" style="margin-top:0">
+                  <a href={`/briefs/${b.slug}`} class="btn btn-sm btn-primary">Read Briefing</a>
+                  <a href={b.source_url} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">Source ↗</a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ── This Week in Tree Service ──────────────────────────────────────── -->
+
+    {latestRows.length >= 3 && (
+      <div class="roundup">
+        <div class="roundup-header">
+          <h2>This Week in Tree Service</h2>
+        </div>
+        <ol>
+          {latestRows.slice(0, 5).map((b: any) => (
+            <li>
+              <a href={`/briefs/${b.slug}`}>{b.title}</a>
+              {b.source_name && <span class="r-source">{b.source_name}</span>}
+            </li>
+          ))}
+        </ol>
+      </div>
+    )}
+
+    <!-- ── Browse by Category ─────────────────────────────────────────────── -->
+
+    {categories.length > 0 && (
+      <section>
+        <div class="section-head">
+          <h2>Browse by Category</h2>
+        </div>
+        <div class="categories-grid">
+          {categories.map((c: any) => (
+            <a href={`/categories/${c.slug}`} class="category-card">
+              <span class="tag">{c.label}</span>
+              <p>{c.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- ── Submit a Story CTA ─────────────────────────────────────────────── -->
+
+    <div class="submit-cta">
+      <h2>Got tree industry news?</h2>
+      <p>Send equipment updates, company announcements, storm photos, safety resources, event info, or interesting stories from the field.</p>
+      <a href="/submit-a-story" class="btn btn-primary">Submit a Story</a>
+    </div>
+
+    <!-- ── Newsletter ─────────────────────────────────────────────────────── -->
+
+    <div class="newsletter" id="newsletter">
+      <h2>Get the weekly tree service briefing.</h2>
+      <p>A short roundup of useful news, gear updates, safety notes, and business ideas for tree service companies.</p>
+
+      {nlSuccess ? (
+        <p class="newsletter-success">You're in. Look for the first issue in your inbox.</p>
+      ) : (
+        <form method="post" class="newsletter-form">
+          <input
+            type="email"
+            name="email"
+            placeholder="your@email.com"
+            required
+            aria-label="Email address"
+          />
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      )}
+      {nlError && <p class="newsletter-error">{nlError}</p>}
+      <p class="newsletter-note">No spam. Unsubscribe any time.</p>
+    </div>
+
+  </main>
+
+</SiteLayout>

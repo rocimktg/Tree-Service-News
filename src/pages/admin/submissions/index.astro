@@ -1,0 +1,114 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { sql } from "../../../lib/db.mjs";
+
+// Status update handler
+if (Astro.request.method === "POST") {
+  const form   = await Astro.request.formData();
+  const id     = parseInt(form.get("id")?.toString() ?? "0");
+  const status = form.get("status")?.toString();
+  const valid  = ["new", "reviewed", "approved", "rejected", "published"];
+  if (id && status && valid.includes(status)) {
+    await sql`UPDATE submissions SET status = ${status}, updated_at = NOW() WHERE id = ${id}`;
+  }
+  return Astro.redirect("/admin/submissions");
+}
+
+const tab = Astro.url.searchParams.get("tab") || "new";
+const validTabs = ["new", "reviewed", "approved", "rejected", "published"];
+const activeTab = validTabs.includes(tab) ? tab : "new";
+
+const submissions = await sql`
+  SELECT * FROM submissions
+  WHERE status = ${activeTab}
+  ORDER BY created_at DESC
+`;
+
+const counts = await sql`
+  SELECT status, COUNT(*)::int AS count
+  FROM submissions
+  GROUP BY status
+`;
+const countMap = Object.fromEntries(counts.map((r: any) => [r.status, r.count]));
+---
+
+<AdminLayout title="Submissions">
+  <div class="page-header">
+    <h1>Submissions</h1>
+  </div>
+
+  <!-- Status tabs -->
+  <div style="display:flex; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+    {["new", "reviewed", "approved", "rejected", "published"].map((t) => (
+      <a
+        href={`/admin/submissions?tab=${t}`}
+        class={`btn btn-sm ${activeTab === t ? "btn-primary" : "btn-ghost"}`}
+      >
+        {t.charAt(0).toUpperCase() + t.slice(1)}
+        {countMap[t] ? <span>({countMap[t]})</span> : ""}
+      </a>
+    ))}
+  </div>
+
+  {submissions.length === 0 ? (
+    <div class="empty">No {activeTab} submissions.</div>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Name / Company</th>
+          <th>Email</th>
+          <th>Type</th>
+          <th>Story Idea</th>
+          <th>Source</th>
+          <th>Submitted</th>
+          <th>Update Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {submissions.map((s: any) => (
+          <tr>
+            <td>
+              <strong>{s.name}</strong>
+              {s.company && <div style="font-size:.8rem;color:#6b7280">{s.company}</div>}
+            </td>
+            <td style="font-size:.85rem">{s.email}</td>
+            <td style="white-space:nowrap">
+              {s.story_type
+                ? <span class="badge badge-new">{s.story_type.replace(/-/g, " ")}</span>
+                : <span style="color:#9ca3af">—</span>}
+            </td>
+            <td style="max-width:280px; font-size:.85rem">
+              <span title={s.story_idea}>
+                {s.story_idea?.length > 120 ? s.story_idea.slice(0, 120) + "…" : s.story_idea}
+              </span>
+              {s.source_url && (
+                <div style="margin-top:.25rem">
+                  <a href={s.source_url} target="_blank" rel="noopener" style="font-size:.78rem;color:#1e3a2f">
+                    View source ↗
+                  </a>
+                </div>
+              )}
+            </td>
+            <td>{s.permission_confirmed ? "✓" : "✗"}</td>
+            <td style="white-space:nowrap; font-size:.82rem; color:#6b7280">
+              {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </td>
+            <td>
+              <form method="post">
+                <input type="hidden" name="id" value={s.id} />
+                <div style="display:flex; gap:.35rem; flex-wrap:wrap;">
+                  {["new", "reviewed", "approved", "rejected"].filter((x) => x !== s.status).map((st) => (
+                    <button name="status" value={st} class="btn btn-sm btn-ghost">
+                      → {st}
+                    </button>
+                  ))}
+                </div>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</AdminLayout>

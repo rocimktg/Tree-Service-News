@@ -1,0 +1,136 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { sql } from "../lib/db.mjs";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let success = false;
+let error   = "";
+let fd: Record<string, string> = {};
+
+if (Astro.request.method === "POST") {
+  const form       = await Astro.request.formData();
+  const name       = form.get("name")?.toString().trim()       ?? "";
+  const company    = form.get("company")?.toString().trim()    || null;
+  const email      = form.get("email")?.toString().trim()      ?? "";
+  const website    = form.get("website")?.toString().trim()    || null;
+  const promote    = form.get("promote")?.toString().trim()    ?? "";
+
+  fd = { name, company: company ?? "", email, website: website ?? "", promote };
+
+  if (!name)                    error = "Name is required.";
+  else if (!email)              error = "Email is required.";
+  else if (!EMAIL_RE.test(email)) error = "Please enter a valid email address.";
+  else if (!promote)            error = "Please tell us what you'd like to promote.";
+
+  if (!error) {
+    // Combine website and promote into story_idea; website goes in source_url
+    const story_idea = promote;
+    try {
+      await sql`
+        INSERT INTO submissions (name, company, email, story_type, story_idea, source_url, permission_confirmed)
+        VALUES (${name}, ${company}, ${email}, 'advertise', ${story_idea}, ${website}, ${true})
+      `;
+      success = true;
+    } catch {
+      error = "Something went wrong. Please try again.";
+    }
+  }
+}
+---
+
+<SiteLayout
+  title="Advertise"
+  description="Sponsorship and advertising opportunities on Tree Service News, reaching tree service owners, arborists, climbers, and equipment-focused professionals."
+  canonicalPath="/advertise"
+>
+  <main class="site-main">
+
+    <!-- Audience block -->
+    <div style="max-width:680px; margin-bottom:3rem">
+
+      <h1 style="font-family:var(--serif); font-size:2.25rem; font-weight:700; color:var(--black); margin-bottom:.5rem">
+        Advertise on Tree Service News
+      </h1>
+      <p style="color:var(--muted); font-size:.9rem; margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:2px solid var(--green)">
+        Reach tree service professionals where they're already paying attention.
+      </p>
+
+      <div style="font-size:.975rem; line-height:1.75; color:var(--text); margin-bottom:2rem">
+        <p>
+          TreeServiceNews.com is building an audience of tree service owners, climbers, arborists, and equipment-focused professionals — the people who buy gear, hire crews, choose insurance, and make daily decisions about running a tree service business.
+        </p>
+
+        <h2 style="font-family:var(--serif); font-size:1.2rem; font-weight:700; color:var(--black); margin:1.75rem 0 .65rem">
+          Who reads Tree Service News
+        </h2>
+        <ul style="margin:0 0 1.25rem; padding-left:1.25rem; display:grid; gap:.35rem">
+          <li>Tree service company owners</li>
+          <li>Arborists and certified climbers</li>
+          <li>Crew leaders and equipment operators</li>
+          <li>Tree service office managers and marketers</li>
+          <li>Equipment dealers and industry vendors</li>
+        </ul>
+
+        <h2 style="font-family:var(--serif); font-size:1.2rem; font-weight:700; color:var(--black); margin:1.75rem 0 .65rem">
+          What we cover
+        </h2>
+        <p>
+          Gear, safety, storm response, business, marketing, climbing, insurance, hiring, and industry news. Our readers are actively making purchasing and business decisions in these areas.
+        </p>
+
+        <div style="background:var(--bg-alt); border:1px solid var(--border); border-left:3px solid var(--orange); border-radius:6px; padding:1.25rem 1.5rem; margin:1.75rem 0">
+          <p style="margin:0; font-weight:600; color:var(--text)">
+            Sponsorship opportunities are coming soon.
+          </p>
+          <p style="margin:.4rem 0 0; font-size:.875rem; color:var(--muted)">
+            Fill out the form below and we'll follow up when sponsorship packages are available.
+          </p>
+        </div>
+      </div>
+
+      <!-- Inquiry form -->
+      {success ? (
+        <div class="form-success">
+          <strong>Got it — thanks for your interest.</strong> We'll be in touch when sponsorship packages are ready.
+        </div>
+      ) : (
+        <div class="form-page" style="max-width:100%">
+          {error && <div class="form-error">{error}</div>}
+
+          <form method="post" class="form-card">
+
+            <div class="field">
+              <label for="name">Name <span class="req">*</span></label>
+              <input type="text" id="name" name="name" value={fd.name ?? ""} required />
+            </div>
+
+            <div class="field">
+              <label for="company">Company</label>
+              <input type="text" id="company" name="company" value={fd.company ?? ""} />
+            </div>
+
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input type="email" id="email" name="email" value={fd.email ?? ""} required />
+            </div>
+
+            <div class="field">
+              <label for="website">Website</label>
+              <input type="url" id="website" name="website" value={fd.website ?? ""} placeholder="https://..." />
+            </div>
+
+            <div class="field">
+              <label for="promote">What do you want to promote? <span class="req">*</span></label>
+              <textarea id="promote" name="promote" rows="4" placeholder="Tell us about your product, service, or company..." required>{fd.promote ?? ""}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Send Inquiry</button>
+
+          </form>
+        </div>
+      )}
+
+    </div>
+
+  </main>
+</SiteLayout>

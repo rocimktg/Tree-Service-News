@@ -1,0 +1,21 @@
+{
+  "name": "tree-service-news",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "preview": "astro preview",
+    "db:migrate": "node scripts/migrate.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.0.0",
+    "astro": "^5.0.0",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0"
+  }
+}

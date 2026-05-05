@@ -1,0 +1,133 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { sql } from "../lib/db.mjs";
+
+const STORY_TYPES = [
+  { value: "company-news",      label: "Company News" },
+  { value: "equipment-update",  label: "Equipment Update" },
+  { value: "storm-work",        label: "Storm Work" },
+  { value: "safety-resource",   label: "Safety Resource" },
+  { value: "training-event",    label: "Training Event" },
+  { value: "jobsite-photo",     label: "Jobsite Photo" },
+  { value: "industry-tip",      label: "Industry Tip" },
+  { value: "other",             label: "Other" },
+];
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let success = false;
+let error   = "";
+let formData: Record<string, string> = {};
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+
+  const name                = form.get("name")?.toString().trim()                ?? "";
+  const company             = form.get("company")?.toString().trim()             || null;
+  const email               = form.get("email")?.toString().trim()               ?? "";
+  const story_type          = form.get("story_type")?.toString()                 || null;
+  const story_idea          = form.get("story_idea")?.toString().trim()          ?? "";
+  const source_url          = form.get("source_url")?.toString().trim()          || null;
+  const permission_confirmed = form.get("permission_confirmed") === "on";
+
+  formData = { name, company: company ?? "", email, story_type: story_type ?? "", story_idea, source_url: source_url ?? "" };
+
+  if (!name)                   error = "Name is required.";
+  else if (!email)             error = "Email is required.";
+  else if (!EMAIL_RE.test(email)) error = "Please enter a valid email address.";
+  else if (!story_idea)        error = "Please tell us your story idea.";
+  else if (!permission_confirmed) error = "Please confirm you have permission to share this.";
+
+  if (!error) {
+    try {
+      await sql`
+        INSERT INTO submissions (name, company, email, story_type, story_idea, source_url, permission_confirmed)
+        VALUES (${name}, ${company}, ${email}, ${story_type}, ${story_idea}, ${source_url}, ${true})
+      `;
+      success = true;
+    } catch {
+      error = "Something went wrong. Please try again.";
+    }
+  }
+}
+---
+
+<SiteLayout
+  title="Submit a Story"
+  description="Send equipment updates, company announcements, storm photos, safety resources, event info, or interesting stories from the tree service field."
+  canonicalPath="/submit-a-story"
+>
+  <main class="site-main">
+    <div class="form-page">
+
+      <h1 style="font-family:var(--serif); font-size:2rem; margin-bottom:.5rem; color:var(--black)">
+        Submit a Story
+      </h1>
+      <p style="color:var(--muted); margin-bottom:2rem; font-size:.95rem">
+        Got tree industry news? Send equipment updates, company announcements, storm photos, safety resources, event info, or interesting stories from the field.
+      </p>
+
+      {success ? (
+        <div class="form-success">
+          <strong>Got it — thanks!</strong> We'll review your submission and follow up if we have questions.
+        </div>
+      ) : (
+        <>
+          {error && <div class="form-error">{error}</div>}
+
+          <form method="post" class="form-card">
+
+            <div class="field">
+              <label for="name">Your name <span class="req">*</span></label>
+              <input type="text" id="name" name="name" value={formData.name ?? ""} required />
+            </div>
+
+            <div class="field">
+              <label for="company">Company</label>
+              <input type="text" id="company" name="company" value={formData.company ?? ""} placeholder="Optional" />
+            </div>
+
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input type="email" id="email" name="email" value={formData.email ?? ""} required />
+              <div class="field-hint">We'll only contact you if we have follow-up questions.</div>
+            </div>
+
+            <div class="field">
+              <label for="story_type">Story type</label>
+              <select id="story_type" name="story_type">
+                <option value="">— Select —</option>
+                {STORY_TYPES.map((t) => (
+                  <option value={t.value} selected={formData.story_type === t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="story_idea">Story idea <span class="req">*</span></label>
+              <textarea id="story_idea" name="story_idea" placeholder="Tell us what's going on..." required>{formData.story_idea ?? ""}</textarea>
+            </div>
+
+            <div class="field">
+              <label for="source_url">Source link</label>
+              <input type="url" id="source_url" name="source_url" value={formData.source_url ?? ""} placeholder="https://..." />
+              <div class="field-hint">Link to an article, press release, or related content.</div>
+            </div>
+
+            <div class="field">
+              <div class="checkbox-row">
+                <input type="checkbox" id="permission_confirmed" name="permission_confirmed" required />
+                <label for="permission_confirmed">
+                  I have permission to share this information, or it is publicly available.
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit Story</button>
+
+          </form>
+        </>
+      )}
+
+    </div>
+  </main>
+</SiteLayout>

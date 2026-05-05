@@ -1,0 +1,157 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { sql } from "../../lib/db.mjs";
+
+const { slug } = Astro.params;
+
+const [briefRows, ] = await Promise.all([
+  sql`
+    SELECT l.*, c.name AS category_name, c.slug AS category_slug, c.label AS category_label
+    FROM links l JOIN categories c ON l.category_id = c.id
+    WHERE l.slug = ${slug} AND l.status = 'published'
+  `,
+]);
+
+const brief = briefRows[0];
+if (!brief) return Astro.redirect("/", 302);
+
+const related = await sql`
+  SELECT l.id, l.title, l.slug, c.label AS category_label, c.slug AS category_slug
+  FROM links l JOIN categories c ON l.category_id = c.id
+  WHERE l.status = 'published' AND l.category_id = ${brief.category_id} AND l.id != ${brief.id}
+  ORDER BY l.published_at DESC LIMIT 4
+`;
+
+// Newsletter signup
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let nlSuccess = false;
+let nlError   = "";
+
+if (Astro.request.method === "POST") {
+  const form  = await Astro.request.formData();
+  const email = form.get("email")?.toString().trim() ?? "";
+  if (!email || !EMAIL_RE.test(email)) {
+    nlError = "Please enter a valid email address.";
+  } else {
+    try {
+      await sql`
+        INSERT INTO newsletter_signups (email, source_page)
+        VALUES (${email}, ${`/briefs/${slug}`})
+        ON CONFLICT (email) DO NOTHING
+      `;
+      nlSuccess = true;
+    } catch {
+      nlError = "Something went wrong. Please try again.";
+    }
+  }
+}
+
+function fmtDate(d: Date | string | null) {
+  if (!d) return null;
+  return new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+const publishedDisplay = fmtDate(brief.published_at);
+const sourceDateDisplay = fmtDate(brief.source_published_at);
+---
+
+<SiteLayout
+  title={brief.title}
+  description={brief.summary ?? undefined}
+  canonicalPath={`/briefs/${slug}`}
+>
+  <main class="site-main">
+    <div class="brief-detail">
+
+      <!-- Header -->
+      <header class="brief-header">
+        <a href={`/categories/${brief.category_slug}`} class="tag">{brief.category_label}</a>
+        <h1>{brief.title}</h1>
+        <div class="brief-meta">
+          {brief.source_name && <span>Source: <strong>{brief.source_name}</strong></span>}
+          {sourceDateDisplay && <span>Published: {sourceDateDisplay}</span>}
+          {publishedDisplay && <span>Added: {publishedDisplay}</span>}
+        </div>
+      </header>
+
+      <!-- Summary -->
+      {brief.summary && (
+        <div class="brief-section">
+          <div class="brief-section-label">Summary</div>
+          <p style="font-size:1rem; line-height:1.7; color:var(--text)">{brief.summary}</p>
+        </div>
+      )}
+
+      <!-- TSN Take -->
+      {brief.tsn_take && (
+        <div class="brief-section">
+          <div class="brief-section-label">TSN Take</div>
+          <div class="tsn-take-block">{brief.tsn_take}</div>
+        </div>
+      )}
+
+      <!-- Why It Matters -->
+      {brief.why_it_matters && (
+        <div class="brief-section">
+          <div class="brief-section-label">Why It Matters</div>
+          <div class="why-block">{brief.why_it_matters}</div>
+        </div>
+      )}
+
+      <!-- Read Source -->
+      <div class="read-source-block">
+        <p>
+          {brief.source_name
+            ? <span>Read the full story at <strong>{brief.source_name}</strong></span>
+            : <span>Read the original source</span>}
+        </p>
+        <a href={brief.source_url} class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+          Read Source ↗
+        </a>
+      </div>
+
+      <!-- Tree Web Design CTA -->
+      <div class="twd-cta">
+        <strong>Need a faster, better website for your tree service company?</strong>
+        <br />
+        <a href="https://treewebdesign.com" target="_blank" rel="noopener">Tree Web Design</a> builds websites designed to turn local searches into phone calls.
+      </div>
+
+      <!-- Related Briefs -->
+      {related.length > 0 && (
+        <section style="margin-bottom:2.5rem">
+          <div class="section-head">
+            <h2>More from {brief.category_name}</h2>
+            <a href={`/categories/${brief.category_slug}`}>See all →</a>
+          </div>
+          <div class="related-grid">
+            {related.map((r: any) => (
+              <a href={`/briefs/${r.slug}`} class="related-card">
+                <span class="tag">{r.category_label}</span>
+                <h4>{r.title}</h4>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <!-- Newsletter -->
+      <div class="newsletter" id="newsletter">
+        <h2>Get the weekly tree service briefing.</h2>
+        <p>A short roundup of useful news, gear updates, safety notes, and business ideas — free, for tree service companies.</p>
+
+        {nlSuccess ? (
+          <p class="newsletter-success">You're in. Look for the first issue in your inbox.</p>
+        ) : (
+          <form method="post" class="newsletter-form">
+            <input type="email" name="email" placeholder="your@email.com" required aria-label="Email address" />
+            <button type="submit" class="btn btn-primary">Subscribe</button>
+          </form>
+        )}
+        {nlError && <p class="newsletter-error">{nlError}</p>}
+        <p class="newsletter-note">No spam. Unsubscribe any time.</p>
+      </div>
+
+    </div>
+  </main>
+</SiteLayout>

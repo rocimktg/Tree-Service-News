@@ -1,0 +1,90 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { sql } from "../lib/db.mjs";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let success = false;
+let error   = "";
+let fd: Record<string, string> = {};
+
+if (Astro.request.method === "POST") {
+  const form    = await Astro.request.formData();
+  const name    = form.get("name")?.toString().trim()    ?? "";
+  const email   = form.get("email")?.toString().trim()   ?? "";
+  const company = form.get("company")?.toString().trim() || null;
+  const message = form.get("message")?.toString().trim() ?? "";
+
+  fd = { name, email, company: company ?? "", message };
+
+  if (!name)                    error = "Name is required.";
+  else if (!email)              error = "Email is required.";
+  else if (!EMAIL_RE.test(email)) error = "Please enter a valid email address.";
+  else if (!message)            error = "Message is required.";
+
+  if (!error) {
+    try {
+      // Reuse the submissions table — story_type = 'contact', message goes in story_idea
+      await sql`
+        INSERT INTO submissions (name, company, email, story_type, story_idea, permission_confirmed)
+        VALUES (${name}, ${company}, ${email}, 'contact', ${message}, ${true})
+      `;
+      success = true;
+    } catch {
+      error = "Something went wrong. Please try again.";
+    }
+  }
+}
+---
+
+<SiteLayout
+  title="Contact"
+  description="Get in touch with Tree Service News."
+  canonicalPath="/contact"
+>
+  <main class="site-main">
+    <div class="form-page">
+
+      <h1 style="font-family:var(--serif); font-size:2rem; margin-bottom:.4rem; color:var(--black)">Contact</h1>
+      <p style="color:var(--muted); margin-bottom:2rem; font-size:.9rem">
+        Questions, corrections, or anything else — use the form below.
+      </p>
+
+      {success ? (
+        <div class="form-success">
+          <strong>Message sent.</strong> We'll get back to you shortly.
+        </div>
+      ) : (
+        <>
+          {error && <div class="form-error">{error}</div>}
+
+          <form method="post" class="form-card">
+
+            <div class="field">
+              <label for="name">Name <span class="req">*</span></label>
+              <input type="text" id="name" name="name" value={fd.name ?? ""} required />
+            </div>
+
+            <div class="field">
+              <label for="email">Email <span class="req">*</span></label>
+              <input type="email" id="email" name="email" value={fd.email ?? ""} required />
+            </div>
+
+            <div class="field">
+              <label for="company">Company</label>
+              <input type="text" id="company" name="company" value={fd.company ?? ""} placeholder="Optional" />
+            </div>
+
+            <div class="field">
+              <label for="message">Message <span class="req">*</span></label>
+              <textarea id="message" name="message" rows="6" required>{fd.message ?? ""}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Send Message</button>
+
+          </form>
+        </>
+      )}
+
+    </div>
+  </main>
+</SiteLayout>

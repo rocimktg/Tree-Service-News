@@ -1,0 +1,104 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { sql } from "../../../lib/db.mjs";
+
+// Quick-action handlers
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = form.get("action")?.toString();
+  const id     = parseInt(form.get("id")?.toString() ?? "0");
+
+  if (id) {
+    if (action === "publish") {
+      await sql`
+        UPDATE links
+        SET status = 'published', published_at = COALESCE(published_at, NOW()), updated_at = NOW()
+        WHERE id = ${id}
+      `;
+    } else if (action === "draft") {
+      await sql`UPDATE links SET status = 'draft', updated_at = NOW() WHERE id = ${id}`;
+    } else if (action === "archive") {
+      await sql`UPDATE links SET status = 'archived', updated_at = NOW() WHERE id = ${id}`;
+    } else if (action === "feature") {
+      await sql`UPDATE links SET is_featured = NOT is_featured, updated_at = NOW() WHERE id = ${id}`;
+    }
+  }
+  return Astro.redirect("/admin/briefs");
+}
+
+const briefs = await sql`
+  SELECT l.id, l.title, l.slug, l.status, l.is_featured, l.published_at, l.created_at,
+         c.name AS category_name, c.label AS category_label
+  FROM links l
+  JOIN categories c ON l.category_id = c.id
+  ORDER BY l.created_at DESC
+`;
+---
+
+<AdminLayout title="Briefs">
+  <div class="page-header">
+    <h1>Briefs</h1>
+    <a href="/admin/briefs/new" class="btn btn-primary">+ New Brief</a>
+  </div>
+
+  {briefs.length === 0 ? (
+    <div class="empty">
+      <p>No briefs yet.</p>
+      <a href="/admin/briefs/new" class="btn btn-primary" style="margin-top:1rem">Create your first brief</a>
+    </div>
+  ) : (
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Featured</th>
+          <th>Published</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {briefs.map((b) => (
+          <tr>
+            <td><a href={`/admin/briefs/${b.id}`}>{b.title}</a></td>
+            <td><span class="tag">{b.category_label}</span></td>
+            <td><span class={`badge badge-${b.status}`}>{b.status}</span></td>
+            <td>{b.is_featured ? <span class="star">★</span> : <span style="color:#d1d5db">—</span>}</td>
+            <td style="white-space:nowrap">
+              {b.published_at
+                ? new Date(b.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : <span style="color:#9ca3af">—</span>}
+            </td>
+            <td>
+              <div class="actions">
+                {b.status !== "published" ? (
+                  <form method="post">
+                    <input type="hidden" name="id" value={b.id} />
+                    <button name="action" value="publish" class="btn btn-sm btn-green">Publish</button>
+                  </form>
+                ) : (
+                  <form method="post">
+                    <input type="hidden" name="id" value={b.id} />
+                    <button name="action" value="draft" class="btn btn-sm btn-gray">Unpublish</button>
+                  </form>
+                )}
+                <form method="post">
+                  <input type="hidden" name="id" value={b.id} />
+                  <button
+                    name="action"
+                    value="feature"
+                    class={`btn btn-sm ${b.is_featured ? "btn-orange" : "btn-ghost"}`}
+                  >
+                    {b.is_featured ? "Unfeature" : "Feature"}
+                  </button>
+                </form>
+                <a href={`/admin/briefs/${b.id}`} class="btn btn-sm btn-ghost">Edit</a>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</AdminLayout>

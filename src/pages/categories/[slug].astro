@@ -1,0 +1,111 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { sql } from "../../lib/db.mjs";
+
+const { slug } = Astro.params;
+
+const [catRows] = await Promise.all([
+  sql`SELECT * FROM categories WHERE slug = ${slug}`,
+]);
+
+const category = catRows[0];
+if (!category) return Astro.redirect("/", 302);
+
+const briefs = await sql`
+  SELECT l.*, c.name AS category_name, c.slug AS category_slug, c.label AS category_label
+  FROM links l JOIN categories c ON l.category_id = c.id
+  WHERE l.status = 'published' AND l.category_id = ${category.id}
+  ORDER BY l.published_at DESC
+`;
+
+// Newsletter signup
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+let nlSuccess = false;
+let nlError   = "";
+
+if (Astro.request.method === "POST") {
+  const form  = await Astro.request.formData();
+  const email = form.get("email")?.toString().trim() ?? "";
+  if (!email || !EMAIL_RE.test(email)) {
+    nlError = "Please enter a valid email address.";
+  } else {
+    try {
+      await sql`
+        INSERT INTO newsletter_signups (email, source_page)
+        VALUES (${email}, ${`/categories/${slug}`})
+        ON CONFLICT (email) DO NOTHING
+      `;
+      nlSuccess = true;
+    } catch {
+      nlError = "Something went wrong. Please try again.";
+    }
+  }
+}
+
+function truncate(text: string | null, max: number) {
+  if (!text) return "";
+  return text.length <= max ? text : text.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
+function fmtDate(d: Date | string | null) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+---
+
+<SiteLayout
+  title={`${category.name} — Tree Service Industry News`}
+  description={category.description ?? undefined}
+  canonicalPath={`/categories/${slug}`}
+>
+  <main class="site-main">
+
+    <div class="category-header">
+      <span class="tag" style="margin-bottom:.6rem; display:inline-block">{category.label}</span>
+      <h1>{category.name}</h1>
+      {category.description && <p>{category.description}</p>}
+    </div>
+
+    {briefs.length === 0 ? (
+      <div class="empty-state">
+        <p>No published briefs in this category yet. Check back soon.</p>
+      </div>
+    ) : (
+      <div class="briefs-grid">
+        {briefs.map((b: any) => (
+          <article class="brief-card">
+            <a href={`/categories/${b.category_slug}`} class="tag">{b.category_label}</a>
+            <h3><a href={`/briefs/${b.slug}`}>{b.title}</a></h3>
+            {b.summary && <p class="summary">{truncate(b.summary, 220)}</p>}
+            {b.tsn_take && <p class="tsn-take">{truncate(b.tsn_take, 160)}</p>}
+            <div class="brief-card-footer">
+              <span class="source-name">{b.source_name ? `Source: ${b.source_name}` : fmtDate(b.published_at)}</span>
+              <div class="card-actions" style="margin-top:0">
+                <a href={`/briefs/${b.slug}`} class="btn btn-sm btn-primary">Read Briefing</a>
+                <a href={b.source_url} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">Source ↗</a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    )}
+
+    <!-- Newsletter -->
+    <div class="newsletter" id="newsletter" style="max-width:640px; margin:2rem auto 0">
+      <h2>Get the weekly tree service briefing.</h2>
+      <p>A short roundup of useful news, gear updates, safety notes, and business ideas — free, for tree service companies.</p>
+
+      {nlSuccess ? (
+        <p class="newsletter-success">You're in. Look for the first issue in your inbox.</p>
+      ) : (
+        <form method="post" class="newsletter-form">
+          <input type="email" name="email" placeholder="your@email.com" required aria-label="Email address" />
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      )}
+      {nlError && <p class="newsletter-error">{nlError}</p>}
+      <p class="newsletter-note">No spam. Unsubscribe any time.</p>
+    </div>
+
+  </main>
+</SiteLayout>

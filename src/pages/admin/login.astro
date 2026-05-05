@@ -1,0 +1,65 @@
+---
+import "../../styles/admin.css";
+
+// Already logged in → send to briefs
+const token = Astro.cookies.get("admin_token")?.value;
+if (token && token === import.meta.env.ADMIN_SECRET) {
+  return Astro.redirect("/admin/briefs");
+}
+
+let error = "";
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const password = form.get("password")?.toString() ?? "";
+
+  if (!import.meta.env.ADMIN_SECRET) {
+    error = "ADMIN_SECRET is not configured. Set it in your .env file.";
+  } else if (password === import.meta.env.ADMIN_SECRET) {
+    Astro.cookies.set("admin_token", import.meta.env.ADMIN_SECRET, {
+      path: "/",
+      httpOnly: true,
+      secure: import.meta.env.PROD,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    });
+    return Astro.redirect("/admin/briefs");
+  } else {
+    error = "Incorrect password.";
+  }
+}
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Admin Login — Tree Service News</title>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">TREE SERVICE NEWS</div>
+      <div class="login-sub">Admin</div>
+
+      {error && <div class="alert alert-error">{error}</div>}
+
+      <form method="post">
+        <div class="field">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            autofocus
+            autocomplete="current-password"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Sign In</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
