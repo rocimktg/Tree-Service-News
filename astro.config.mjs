@@ -7,4 +7,7 @@ export default defineConfig({
   server: {
     host: true, // bind to 0.0.0.0 — required for Railway
   },
+  security: {
+    checkOrigin: false,
+  },
 });
