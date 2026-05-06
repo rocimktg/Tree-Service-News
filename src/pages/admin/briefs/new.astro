@@ -3,7 +3,7 @@ import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { sql } from "../../../lib/db.mjs";
 import { slugify } from "../../../lib/slugify.mjs";
 
-const categories = await sql`SELECT id, name, label FROM categories ORDER BY name ASC`;
+const categories = await sql`SELECT id, name, label, slug FROM categories ORDER BY name ASC`;
 
 let error = "";
 
@@ -26,7 +26,6 @@ if (Astro.request.method === "POST") {
   else if (!category_id)  error = "Category is required.";
 
   if (!error) {
-    // Build a unique slug
     const base = slugify(title);
     let slug = base;
     let n = 0;
@@ -65,7 +64,19 @@ if (Astro.request.method === "POST") {
 
   {error && <div class="alert alert-error">{error}</div>}
 
-  <form method="post" class="card">
+  <!-- AI Generator -->
+  <div class="card ai-panel" id="ai-panel">
+    <p class="section-label" style="margin-bottom:.75rem">Generate with AI</p>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">Paste a URL and Claude will write the brief for you. Review and edit before saving.</p>
+    <div class="ai-input-row">
+      <input type="url" id="ai-url" placeholder="https://..." style="flex:1" />
+      <button type="button" id="ai-generate-btn" class="btn btn-green">Generate</button>
+    </div>
+    <div id="ai-status" style="font-size:.85rem; margin-top:.6rem; min-height:1.4em;"></div>
+  </div>
+
+  <!-- Manual / editable form -->
+  <form method="post" class="card" id="brief-form">
 
     <p class="section-label">Source</p>
     <div class="field-row">
@@ -93,7 +104,7 @@ if (Astro.request.method === "POST") {
       <select id="category_id" name="category_id" required>
         <option value="">— Select —</option>
         {categories.map((c) => (
-          <option value={c.id}>[{c.label}] {c.name}</option>
+          <option value={c.id} data-slug={c.slug}>[{c.label}] {c.name}</option>
         ))}
       </select>
     </div>
@@ -123,3 +134,69 @@ if (Astro.request.method === "POST") {
 
   </form>
 </AdminLayout>
+
+<script>
+  const btn    = document.getElementById("ai-generate-btn") as HTMLButtonElement;
+  const urlIn  = document.getElementById("ai-url") as HTMLInputElement;
+  const status = document.getElementById("ai-status") as HTMLDivElement;
+
+  btn.addEventListener("click", async () => {
+    const url = urlIn.value.trim();
+    if (!url) { status.textContent = "Enter a URL first."; return; }
+
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+    status.style.color = "var(--muted)";
+    status.textContent = "Fetching article and writing brief…";
+
+    try {
+      const res  = await fetch("/api/generate-brief", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        status.style.color = "#991b1b";
+        status.textContent = data.error ?? "Something went wrong.";
+        return;
+      }
+
+      // Fill form fields
+      const set = (id: string, val: string) => {
+        const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
+        if (el && val) el.value = val;
+      };
+
+      set("source_url",   url);
+      set("source_name",  data.source_name  ?? "");
+      set("title",        data.title        ?? "");
+      set("summary",      data.summary      ?? "");
+      set("tsn_take",     data.tsn_take     ?? "");
+      set("why_it_matters", data.why_it_matters ?? "");
+
+      // Match category by slug
+      if (data.category) {
+        const select = document.getElementById("category_id") as HTMLSelectElement;
+        const opt = [...select.options].find(o => o.dataset.slug === data.category);
+        if (opt) select.value = opt.value;
+      }
+
+      status.style.color = "#065f46";
+      status.textContent = "Done — review the fields below and edit as needed before saving.";
+    } catch {
+      status.style.color = "#991b1b";
+      status.textContent = "Network error. Try again.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Generate";
+    }
+  });
+</script>
+
+<style>
+  .ai-panel { border-top: 3px solid var(--green); margin-bottom: 1.5rem; }
+  .ai-input-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .ai-input-row input { min-width: 0; }
+</style>
