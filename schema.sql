@@ -125,3 +125,24 @@ INSERT INTO categories (name, slug, label, description) VALUES
   ('Industry News', 'industry-news',  'INDUSTRY',  'Company news, manufacturer updates, trade show coverage, and industry announcements.'),
   ('Tree WTF',      'tree-wtf',       'TREE WTF',  'The wildest, most surprising, and occasionally absurd stories from the tree service world.')
 ON CONFLICT (slug) DO NOTHING;
+
+-- ─── extended metadata columns (added post-MVP) ───────────────────────────────
+
+ALTER TABLE links ADD COLUMN IF NOT EXISTS audience          TEXT[]       DEFAULT '{}';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS business_impact   TEXT[]       DEFAULT '{}';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS job_relevance     TEXT[]       DEFAULT '{}';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS read_next_tags    TEXT[]       DEFAULT '{}';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS reader_hook       TEXT;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS card_blurb        TEXT;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS impact_badge      VARCHAR(100);
+ALTER TABLE links ADD COLUMN IF NOT EXISTS dwell_prompt      TEXT;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS weirdness_level   VARCHAR(20)  DEFAULT 'Normal';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS urgency           VARCHAR(20)  DEFAULT 'Medium';
+ALTER TABLE links ADD COLUMN IF NOT EXISTS operator_type_fit TEXT;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS why_this_is_here  TEXT;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS homepage_section  VARCHAR(100);
+ALTER TABLE links ADD COLUMN IF NOT EXISTS editor_pick       BOOLEAN      DEFAULT FALSE;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS most_useful       BOOLEAN      DEFAULT FALSE;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS storm_watch       BOOLEAN      DEFAULT FALSE;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS gear_watch        BOOLEAN      DEFAULT FALSE;
+ALTER TABLE links ADD COLUMN IF NOT EXISTS tree_wtf_flag     BOOLEAN      DEFAULT FALSE;

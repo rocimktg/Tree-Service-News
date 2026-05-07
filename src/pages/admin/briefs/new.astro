@@ -7,6 +7,11 @@ const categories = await sql`SELECT id, name, label, slug FROM categories ORDER 
 
 let error = "";
 
+function parseArr(val: FormDataEntryValue | null): string[] {
+  if (!val) return [];
+  return val.toString().split(",").map(s => s.trim()).filter(Boolean);
+}
+
 if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
 
@@ -21,9 +26,23 @@ if (Astro.request.method === "POST") {
   const is_featured         = form.get("is_featured") === "on";
   const status              = form.get("submit_action") === "publish" ? "published" : "draft";
 
-  if (!title)       error = "Title is required.";
-  else if (!source_url)   error = "Source URL is required.";
-  else if (!category_id)  error = "Category is required.";
+  // metadata
+  const reader_hook       = form.get("reader_hook")?.toString().trim()       || null;
+  const card_blurb        = form.get("card_blurb")?.toString().trim()        || null;
+  const impact_badge      = form.get("impact_badge")?.toString().trim()      || null;
+  const dwell_prompt      = form.get("dwell_prompt")?.toString().trim()      || null;
+  const weirdness_level   = form.get("weirdness_level")?.toString().trim()   || "Normal";
+  const urgency           = form.get("urgency")?.toString().trim()           || "Medium";
+  const operator_type_fit = form.get("operator_type_fit")?.toString().trim() || null;
+  const why_this_is_here  = form.get("why_this_is_here")?.toString().trim()  || null;
+  const audience          = parseArr(form.get("audience"));
+  const business_impact   = parseArr(form.get("business_impact"));
+  const job_relevance     = parseArr(form.get("job_relevance"));
+  const read_next_tags    = parseArr(form.get("read_next_tags"));
+
+  if (!title)      error = "Title is required.";
+  else if (!source_url)  error = "Source URL is required.";
+  else if (!category_id) error = "Category is required.";
 
   if (!error) {
     const base = slugify(title);
@@ -41,10 +60,14 @@ if (Astro.request.method === "POST") {
       const [brief] = await sql`
         INSERT INTO links
           (title, slug, source_url, source_name, source_published_at,
-           summary, tsn_take, why_it_matters, category_id, status, is_featured, published_at)
+           summary, tsn_take, why_it_matters, category_id, status, is_featured, published_at,
+           reader_hook, card_blurb, impact_badge, dwell_prompt, weirdness_level, urgency,
+           operator_type_fit, why_this_is_here, audience, business_impact, job_relevance, read_next_tags)
         VALUES
           (${title}, ${slug}, ${source_url}, ${source_name}, ${source_published_at},
-           ${summary}, ${tsn_take}, ${why_it_matters}, ${category_id}, ${status}, ${is_featured}, ${published_at})
+           ${summary}, ${tsn_take}, ${why_it_matters}, ${category_id}, ${status}, ${is_featured}, ${published_at},
+           ${reader_hook}, ${card_blurb}, ${impact_badge}, ${dwell_prompt}, ${weirdness_level}, ${urgency},
+           ${operator_type_fit}, ${why_this_is_here}, ${audience}, ${business_impact}, ${job_relevance}, ${read_next_tags})
         RETURNING id
       `;
       return Astro.redirect(`/admin/briefs/${brief.id}?created=1`);
@@ -67,7 +90,7 @@ if (Astro.request.method === "POST") {
   <!-- AI Generator -->
   <div class="card ai-panel" id="ai-panel">
     <p class="section-label" style="margin-bottom:.75rem">Generate with AI</p>
-    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">Paste a URL and Claude will write the brief for you. Review and edit before saving.</p>
+    <p style="font-size:.85rem; color:var(--muted); margin-bottom:1rem;">Paste a URL and Claude will write the brief and fill all metadata. Review and edit before saving.</p>
     <div class="ai-input-row">
       <input type="url" id="ai-url" placeholder="https://..." style="flex:1" />
       <button type="button" id="ai-generate-btn" class="btn btn-green">Generate</button>
@@ -121,6 +144,66 @@ if (Astro.request.method === "POST") {
       <textarea id="why_it_matters" name="why_it_matters" placeholder="What should owners, climbers, or crews take from this?"></textarea>
     </div>
 
+    <p class="section-label">Card &amp; Discovery Metadata</p>
+    <div class="field-row">
+      <div class="field">
+        <label for="impact_badge">Impact Badge</label>
+        <input type="text" id="impact_badge" name="impact_badge" placeholder="e.g. Gear Watch, Storm Watch, Safety Note" />
+      </div>
+      <div class="field" style="max-width:160px">
+        <label for="weirdness_level">Weirdness</label>
+        <select id="weirdness_level" name="weirdness_level">
+          <option value="Normal">Normal</option>
+          <option value="Odd">Odd</option>
+          <option value="Tree WTF">Tree WTF</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:140px">
+        <label for="urgency">Urgency</label>
+        <select id="urgency" name="urgency">
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="reader_hook">Reader Hook <span class="field-note">(why crews should care — shown on cards)</span></label>
+      <input type="text" id="reader_hook" name="reader_hook" placeholder="One sentence: why would a tree pro click this?" />
+    </div>
+    <div class="field">
+      <label for="card_blurb">Card Blurb <span class="field-note">(1–2 sentences, operator-focused teaser)</span></label>
+      <textarea id="card_blurb" name="card_blurb" rows={2} placeholder="Short teaser for the card. More operator-focused than the summary."></textarea>
+    </div>
+    <div class="field">
+      <label for="operator_type_fit">Operator Type Fit</label>
+      <input type="text" id="operator_type_fit" name="operator_type_fit" placeholder="e.g. Best for small crews and growth-stage companies" />
+    </div>
+    <div class="field">
+      <label for="dwell_prompt">Dwell Prompt <span class="field-note">(question shown at bottom of article)</span></label>
+      <input type="text" id="dwell_prompt" name="dwell_prompt" placeholder="e.g. Would this change how you schedule storm response work?" />
+    </div>
+    <div class="field">
+      <label for="why_this_is_here">Why This Is Here <span class="field-note">(for unusual/Tree WTF stories only)</span></label>
+      <textarea id="why_this_is_here" name="why_this_is_here" rows={2} placeholder="Leave blank for normal articles."></textarea>
+    </div>
+    <div class="field">
+      <label for="audience">Audience <span class="field-note">(comma-separated)</span></label>
+      <input type="text" id="audience" name="audience" placeholder="Owner-Operator, Small Crew, Equipment Buyer" />
+    </div>
+    <div class="field">
+      <label for="job_relevance">Job Relevance <span class="field-note">(comma-separated)</span></label>
+      <input type="text" id="job_relevance" name="job_relevance" placeholder="Tree Removal, Storm Cleanup, Equipment" />
+    </div>
+    <div class="field">
+      <label for="read_next_tags">Read Next Tags <span class="field-note">(comma-separated lowercase)</span></label>
+      <input type="text" id="read_next_tags" name="read_next_tags" placeholder="storm response, grapple saw, crew safety" />
+    </div>
+    <div class="field">
+      <label for="business_impact">Business Impact <span class="field-note">(comma-separated)</span></label>
+      <input type="text" id="business_impact" name="business_impact" placeholder="Reduces Risk, Improves Equipment Decisions" />
+    </div>
+
     <p class="section-label">Settings</p>
     <div class="checkbox-row">
       <input type="checkbox" id="is_featured" name="is_featured" />
@@ -163,20 +246,39 @@ if (Astro.request.method === "POST") {
         return;
       }
 
-      // Fill form fields
       const set = (id: string, val: string) => {
         const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
         if (el && val) el.value = val;
       };
 
-      set("source_url",   url);
-      set("source_name",  data.source_name  ?? "");
-      set("title",        data.title        ?? "");
-      set("summary",      data.summary      ?? "");
-      set("tsn_take",     data.tsn_take     ?? "");
-      set("why_it_matters", data.why_it_matters ?? "");
+      const arrStr = (v: unknown) => Array.isArray(v) ? v.join(", ") : (v ?? "");
 
-      // Match category by slug
+      set("source_url",        url);
+      set("source_name",       data.source_name        ?? "");
+      set("title",             data.title              ?? "");
+      set("summary",           data.summary            ?? "");
+      set("tsn_take",          data.tsn_take           ?? "");
+      set("why_it_matters",    data.why_it_matters     ?? "");
+      set("reader_hook",       data.reader_hook        ?? "");
+      set("card_blurb",        data.card_blurb         ?? "");
+      set("impact_badge",      data.impact_badge       ?? "");
+      set("dwell_prompt",      data.dwell_prompt       ?? "");
+      set("operator_type_fit", data.operator_type_fit  ?? "");
+      set("why_this_is_here",  data.why_this_is_here   ?? "");
+      set("audience",          arrStr(data.audience));
+      set("job_relevance",     arrStr(data.job_relevance));
+      set("read_next_tags",    arrStr(data.read_next_tags));
+      set("business_impact",   arrStr(data.business_impact));
+
+      if (data.weirdness_level) {
+        const sel = document.getElementById("weirdness_level") as HTMLSelectElement;
+        if (sel) sel.value = data.weirdness_level;
+      }
+      if (data.urgency) {
+        const sel = document.getElementById("urgency") as HTMLSelectElement;
+        if (sel) sel.value = data.urgency;
+      }
+
       if (data.category) {
         const select = document.getElementById("category_id") as HTMLSelectElement;
         const opt = [...select.options].find(o => o.dataset.slug === data.category);
@@ -199,4 +301,5 @@ if (Astro.request.method === "POST") {
   .ai-panel { border-top: 3px solid var(--green); margin-bottom: 1.5rem; }
   .ai-input-row { display: flex; gap: .5rem; flex-wrap: wrap; }
   .ai-input-row input { min-width: 0; }
+  .field-note { font-weight: 400; color: var(--muted); font-size: .78rem; }
 </style>

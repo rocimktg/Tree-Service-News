@@ -15,7 +15,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return new Response(JSON.stringify({ error: "Missing URL." }), { status: 400 });
   }
 
-  // Fetch article HTML and strip to plain text
   let articleText = "";
   try {
     const res = await fetch(url, {
@@ -38,33 +37,45 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const message = await client.messages.create({
     model: "claude-opus-4-7",
-    max_tokens: 1024,
+    max_tokens: 2048,
     messages: [
       {
         role: "user",
-        content: `You are an editor for Tree Service News (TSN), a curated industry news site for tree service companies and arborists. Write in a plain, direct, no-fluff voice aimed at working tree crews and small business owners.
+        content: `You are an editor for Tree Service News (TSN), a curated industry news site for tree service companies and arborists. Write in a plain, direct, no-fluff voice for working tree crews and small business owners.
 
-Given the article below, return a JSON object with exactly these fields:
+Given the article below, return a single JSON object with ALL of the following fields. Respond with ONLY valid JSON — no markdown, no explanation.
+
+EDITORIAL FIELDS (shown publicly):
 - title: Rewritten headline for tree service owners. Clear and direct. No clickbait.
 - source_name: The publication or website name (e.g. "TCIA", "Arborist Now", "Pro Climber")
-- summary: 2–4 sentences. What happened, factual and clear.
-- tsn_take: 1 short paragraph. Practical angle for tree crews and owners — what to do or think about.
+- summary: 2–4 sentences. What happened, factual and clear. No invented facts.
+- tsn_take: 1 short paragraph. Practical angle for tree crews and owners.
 - why_it_matters: 1–2 sentences. What owners, climbers, or crew should take away.
-- category: Exactly one of these slugs: gear | safety | storm-response | business | marketing | climbing | insurance | hiring | industry-news | tree-wtf | arborist-news | eco-watch
+- category: Exactly one slug: gear | safety | storm-response | business | marketing | climbing | insurance | hiring | industry-news | tree-wtf | arborist-news | eco-watch
+
+METADATA FIELDS (used for cards, related posts, and article footer):
+- reader_hook: One sentence explaining why a working tree pro would click this.
+- card_blurb: 1–2 sentences for article cards, more operator-focused than the summary.
+- impact_badge: One short phrase from: Storm Watch | Gear Watch | Safety Note | Business Angle | Good for Owners | Good for Crews | Good for Arborists | Field Relevant | Weird One | Insurance Angle | Equipment ROI | Utility Watch | Municipal Angle
+- audience: Array of 1–4 from: Owner-Operator | Small Crew | Growth Company | Established Company | Arborist | Climber | Utility Vegetation | Municipal Crew | Storm Contractor | Land Manager | Equipment Buyer
+- business_impact: Array of 1–3 from: Makes Money | Saves Time | Reduces Risk | Improves Safety | Helps Hiring | Improves Equipment Decisions | Supports Storm Readiness | Improves Professionalism | Industry Awareness
+- job_relevance: Array of 1–5 from: Tree Removal | Pruning | Storm Cleanup | Stump Grinding | Crane Work | Grapple Saw Work | Land Clearing | Plant Health Care | Utility Work | Municipal Work | Forestry | Restoration | Marketing | Insurance | Safety | Business Operations | Equipment | Hiring | Reviews | Google Visibility
+- read_next_tags: Array of 3–6 lowercase tags for related article matching (e.g. "storm response", "grapple saw", "crew safety")
+- dwell_prompt: One practical question for the article footer (e.g. "Would this change how you schedule storm response work?")
+- weirdness_level: Exactly one of: Normal | Odd | Tree WTF
+- urgency: Exactly one of: High | Medium | Low
+- operator_type_fit: Short phrase for who this is most relevant for (e.g. "Best for small crews and growth-stage companies")
+- why_this_is_here: For unusual or Tree WTF stories only — why this belongs on TSN. Return null for normal articles.
 
 Article URL: ${url}
 
 Article content:
-${articleText}
-
-Respond with ONLY valid JSON. No markdown, no explanation.`,
+${articleText}`,
       },
     ],
   });
 
   const raw = message.content[0].type === "text" ? message.content[0].text.trim() : "";
-
-  // Strip markdown code fences if Claude includes them
   const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
 
   try {
