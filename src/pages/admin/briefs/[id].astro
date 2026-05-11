@@ -183,65 +183,41 @@ const siteUrl = import.meta.env.SITE || "https://treeservicenews.com";
       <textarea id="why_it_matters" name="why_it_matters">{brief.why_it_matters ?? ""}</textarea>
     </div>
 
-    <p class="section-label">Card &amp; Discovery Metadata</p>
-    <div class="field-row">
+    <!-- Hidden inputs — preserve AI-generated values on save -->
+    <input type="hidden" name="audience"        value={(brief.audience        ?? []).join(", ")} />
+    <input type="hidden" name="business_impact" value={(brief.business_impact ?? []).join(", ")} />
+    <input type="hidden" name="job_relevance"   value={(brief.job_relevance   ?? []).join(", ")} />
+    <input type="hidden" name="read_next_tags"  value={(brief.read_next_tags  ?? []).join(", ")} />
+    <input type="hidden" name="weirdness_level" value={brief.weirdness_level ?? "Normal"} />
+    <input type="hidden" name="urgency"         value={brief.urgency         ?? "Medium"} />
+
+    <details class="metadata-details">
+      <summary class="metadata-summary">Card &amp; Social Metadata</summary>
       <div class="field">
         <label for="impact_badge">Impact Badge</label>
         <input type="text" id="impact_badge" name="impact_badge" value={brief.impact_badge ?? ""} placeholder="e.g. Gear Watch, Storm Watch, Safety Note" />
       </div>
-      <div class="field" style="max-width:160px">
-        <label for="weirdness_level">Weirdness</label>
-        <select id="weirdness_level" name="weirdness_level">
-          <option value="Normal"   selected={brief.weirdness_level === "Normal"}>Normal</option>
-          <option value="Odd"      selected={brief.weirdness_level === "Odd"}>Odd</option>
-          <option value="Tree WTF" selected={brief.weirdness_level === "Tree WTF"}>Tree WTF</option>
-        </select>
+      <div class="field">
+        <label for="card_blurb">Card Blurb <span class="field-note">(1–2 sentence teaser shown on cards and used for Facebook captions)</span></label>
+        <textarea id="card_blurb" name="card_blurb" rows={2}>{brief.card_blurb ?? ""}</textarea>
       </div>
-      <div class="field" style="max-width:140px">
-        <label for="urgency">Urgency</label>
-        <select id="urgency" name="urgency">
-          <option value="Medium" selected={brief.urgency === "Medium"}>Medium</option>
-          <option value="High"   selected={brief.urgency === "High"}>High</option>
-          <option value="Low"    selected={brief.urgency === "Low"}>Low</option>
-        </select>
+      <div class="field">
+        <label for="reader_hook">Reader Hook <span class="field-note">(shown on cards as "Why crews should care")</span></label>
+        <input type="text" id="reader_hook" name="reader_hook" value={brief.reader_hook ?? ""} />
       </div>
-    </div>
-    <div class="field">
-      <label for="reader_hook">Reader Hook <span style="font-weight:400;color:var(--muted);font-size:.78rem">(shown on cards as "Why crews should care")</span></label>
-      <input type="text" id="reader_hook" name="reader_hook" value={brief.reader_hook ?? ""} />
-    </div>
-    <div class="field">
-      <label for="card_blurb">Card Blurb <span style="font-weight:400;color:var(--muted);font-size:.78rem">(1–2 sentence operator-focused teaser)</span></label>
-      <textarea id="card_blurb" name="card_blurb" rows={2}>{brief.card_blurb ?? ""}</textarea>
-    </div>
-    <div class="field">
-      <label for="operator_type_fit">Operator Type Fit</label>
-      <input type="text" id="operator_type_fit" name="operator_type_fit" value={brief.operator_type_fit ?? ""} />
-    </div>
-    <div class="field">
-      <label for="dwell_prompt">Dwell Prompt <span style="font-weight:400;color:var(--muted);font-size:.78rem">(question at article bottom)</span></label>
-      <input type="text" id="dwell_prompt" name="dwell_prompt" value={brief.dwell_prompt ?? ""} />
-    </div>
-    <div class="field">
-      <label for="why_this_is_here">Why This Is Here <span style="font-weight:400;color:var(--muted);font-size:.78rem">(unusual/Tree WTF stories only)</span></label>
-      <textarea id="why_this_is_here" name="why_this_is_here" rows={2}>{brief.why_this_is_here ?? ""}</textarea>
-    </div>
-    <div class="field">
-      <label for="audience">Audience <span style="font-weight:400;color:var(--muted);font-size:.78rem">(comma-separated)</span></label>
-      <input type="text" id="audience" name="audience" value={(brief.audience ?? []).join(", ")} />
-    </div>
-    <div class="field">
-      <label for="job_relevance">Job Relevance <span style="font-weight:400;color:var(--muted);font-size:.78rem">(comma-separated)</span></label>
-      <input type="text" id="job_relevance" name="job_relevance" value={(brief.job_relevance ?? []).join(", ")} />
-    </div>
-    <div class="field">
-      <label for="read_next_tags">Read Next Tags <span style="font-weight:400;color:var(--muted);font-size:.78rem">(comma-separated lowercase)</span></label>
-      <input type="text" id="read_next_tags" name="read_next_tags" value={(brief.read_next_tags ?? []).join(", ")} />
-    </div>
-    <div class="field">
-      <label for="business_impact">Business Impact <span style="font-weight:400;color:var(--muted);font-size:.78rem">(comma-separated)</span></label>
-      <input type="text" id="business_impact" name="business_impact" value={(brief.business_impact ?? []).join(", ")} />
-    </div>
+      <div class="field">
+        <label for="operator_type_fit">Operator Type Fit</label>
+        <input type="text" id="operator_type_fit" name="operator_type_fit" value={brief.operator_type_fit ?? ""} />
+      </div>
+      <div class="field">
+        <label for="dwell_prompt">Operator Question <span class="field-note">(shown at bottom of article)</span></label>
+        <input type="text" id="dwell_prompt" name="dwell_prompt" value={brief.dwell_prompt ?? ""} />
+      </div>
+      <div class="field">
+        <label for="why_this_is_here">Why This Is Here <span class="field-note">(Tree WTF stories only)</span></label>
+        <textarea id="why_this_is_here" name="why_this_is_here" rows={2}>{brief.why_this_is_here ?? ""}</textarea>
+      </div>
+    </details>
 
     <p class="section-label">Settings</p>
     <div class="checkbox-row">

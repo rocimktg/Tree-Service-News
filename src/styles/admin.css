@@ -346,6 +346,36 @@ textarea { min-height: 110px; resize: vertical; }
   margin-bottom: 2rem;
 }
 
+/* ── Collapsible metadata section ────────────────────────── */
+
+.metadata-details {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+}
+.metadata-summary {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9ca3af;
+  padding: .85rem 0 .1rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.metadata-summary::-webkit-details-marker { display: none; }
+.metadata-summary::after { content: '▸'; font-size: .75rem; }
+details[open] .metadata-summary::after { content: '▾'; }
+.metadata-summary:hover { color: #374151; }
+.metadata-details .field:first-of-type { margin-top: 1rem; }
+
+/* ── Field note (inline label hint) ─────────────────────── */
+
+.field-note { font-weight: 400; color: #9ca3af; font-size: .78rem; }
+
 /* ── Star icon ───────────────────────────────────────────── */
 
 .star { color: #f97316; font-size: 1rem; }

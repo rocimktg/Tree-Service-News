@@ -144,65 +144,41 @@ if (Astro.request.method === "POST") {
       <textarea id="why_it_matters" name="why_it_matters" placeholder="What should owners, climbers, or crews take from this?"></textarea>
     </div>
 
-    <p class="section-label">Card &amp; Discovery Metadata</p>
-    <div class="field-row">
+    <!-- Hidden inputs — AI populates these; they're saved but not shown -->
+    <input type="hidden" id="audience"        name="audience"        value="" />
+    <input type="hidden" id="business_impact" name="business_impact" value="" />
+    <input type="hidden" id="job_relevance"   name="job_relevance"   value="" />
+    <input type="hidden" id="read_next_tags"  name="read_next_tags"  value="" />
+    <input type="hidden" id="weirdness_level" name="weirdness_level" value="Normal" />
+    <input type="hidden" id="urgency"         name="urgency"         value="Medium" />
+
+    <details class="metadata-details">
+      <summary class="metadata-summary">Card &amp; Social Metadata</summary>
       <div class="field">
         <label for="impact_badge">Impact Badge</label>
         <input type="text" id="impact_badge" name="impact_badge" placeholder="e.g. Gear Watch, Storm Watch, Safety Note" />
       </div>
-      <div class="field" style="max-width:160px">
-        <label for="weirdness_level">Weirdness</label>
-        <select id="weirdness_level" name="weirdness_level">
-          <option value="Normal">Normal</option>
-          <option value="Odd">Odd</option>
-          <option value="Tree WTF">Tree WTF</option>
-        </select>
+      <div class="field">
+        <label for="card_blurb">Card Blurb <span class="field-note">(1–2 sentence teaser shown on cards and used for Facebook captions)</span></label>
+        <textarea id="card_blurb" name="card_blurb" rows={2} placeholder="Short operator-focused teaser."></textarea>
       </div>
-      <div class="field" style="max-width:140px">
-        <label for="urgency">Urgency</label>
-        <select id="urgency" name="urgency">
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-          <option value="Low">Low</option>
-        </select>
+      <div class="field">
+        <label for="reader_hook">Reader Hook <span class="field-note">(shown on cards as "Why crews should care")</span></label>
+        <input type="text" id="reader_hook" name="reader_hook" placeholder="One sentence: why would a tree pro click this?" />
       </div>
-    </div>
-    <div class="field">
-      <label for="reader_hook">Reader Hook <span class="field-note">(why crews should care — shown on cards)</span></label>
-      <input type="text" id="reader_hook" name="reader_hook" placeholder="One sentence: why would a tree pro click this?" />
-    </div>
-    <div class="field">
-      <label for="card_blurb">Card Blurb <span class="field-note">(1–2 sentences, operator-focused teaser)</span></label>
-      <textarea id="card_blurb" name="card_blurb" rows={2} placeholder="Short teaser for the card. More operator-focused than the summary."></textarea>
-    </div>
-    <div class="field">
-      <label for="operator_type_fit">Operator Type Fit</label>
-      <input type="text" id="operator_type_fit" name="operator_type_fit" placeholder="e.g. Best for small crews and growth-stage companies" />
-    </div>
-    <div class="field">
-      <label for="dwell_prompt">Dwell Prompt <span class="field-note">(question shown at bottom of article)</span></label>
-      <input type="text" id="dwell_prompt" name="dwell_prompt" placeholder="e.g. Would this change how you schedule storm response work?" />
-    </div>
-    <div class="field">
-      <label for="why_this_is_here">Why This Is Here <span class="field-note">(for unusual/Tree WTF stories only)</span></label>
-      <textarea id="why_this_is_here" name="why_this_is_here" rows={2} placeholder="Leave blank for normal articles."></textarea>
-    </div>
-    <div class="field">
-      <label for="audience">Audience <span class="field-note">(comma-separated)</span></label>
-      <input type="text" id="audience" name="audience" placeholder="Owner-Operator, Small Crew, Equipment Buyer" />
-    </div>
-    <div class="field">
-      <label for="job_relevance">Job Relevance <span class="field-note">(comma-separated)</span></label>
-      <input type="text" id="job_relevance" name="job_relevance" placeholder="Tree Removal, Storm Cleanup, Equipment" />
-    </div>
-    <div class="field">
-      <label for="read_next_tags">Read Next Tags <span class="field-note">(comma-separated lowercase)</span></label>
-      <input type="text" id="read_next_tags" name="read_next_tags" placeholder="storm response, grapple saw, crew safety" />
-    </div>
-    <div class="field">
-      <label for="business_impact">Business Impact <span class="field-note">(comma-separated)</span></label>
-      <input type="text" id="business_impact" name="business_impact" placeholder="Reduces Risk, Improves Equipment Decisions" />
-    </div>
+      <div class="field">
+        <label for="operator_type_fit">Operator Type Fit</label>
+        <input type="text" id="operator_type_fit" name="operator_type_fit" placeholder="e.g. Best for small crews and growth-stage companies" />
+      </div>
+      <div class="field">
+        <label for="dwell_prompt">Operator Question <span class="field-note">(shown at bottom of article)</span></label>
+        <input type="text" id="dwell_prompt" name="dwell_prompt" placeholder="e.g. Would this change how you schedule storm response work?" />
+      </div>
+      <div class="field">
+        <label for="why_this_is_here">Why This Is Here <span class="field-note">(Tree WTF stories only)</span></label>
+        <textarea id="why_this_is_here" name="why_this_is_here" rows={2} placeholder="Leave blank for normal articles."></textarea>
+      </div>
+    </details>
 
     <p class="section-label">Settings</p>
     <div class="checkbox-row">
@@ -301,5 +277,4 @@ if (Astro.request.method === "POST") {
   .ai-panel { border-top: 3px solid var(--green); margin-bottom: 1.5rem; }
   .ai-input-row { display: flex; gap: .5rem; flex-wrap: wrap; }
   .ai-input-row input { min-width: 0; }
-  .field-note { font-weight: 400; color: var(--muted); font-size: .78rem; }
 </style>
