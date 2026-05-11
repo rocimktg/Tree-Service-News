@@ -74,20 +74,18 @@ function fmtDate(d: Date | string | null) {
       <div class="briefs-grid">
         {briefs.map((b: any) => (
           <article class="brief-card">
-            <div class="brief-card-eyebrow">
-              <a href={`/categories/${b.category_slug}`} class="tag">{b.category_label}</a>
-              {b.impact_badge && <span class="impact-badge">{b.impact_badge}</span>}
-            </div>
+            <a href={`/categories/${b.category_slug}`} class="tag">{b.category_label}</a>
             <h3><a href={`/briefs/${b.slug}`}>{b.title}</a></h3>
-            {(b.card_blurb || b.reader_hook || b.summary) && (
-              <p class="summary">{truncate(b.card_blurb || b.reader_hook || b.summary, 220)}</p>
+            {(b.card_blurb || b.summary) && (
+              <p class="summary">{truncate(b.card_blurb || b.summary, 220)}</p>
             )}
             {b.reader_hook && (
               <p class="card-crew-hook"><span class="card-crew-label">Why crews should care:</span> {truncate(b.reader_hook, 140)}</p>
             )}
             <div class="brief-card-footer">
               <span class="source-name">{b.source_name ? `Source: ${b.source_name}` : fmtDate(b.published_at)}</span>
-              <div class="card-actions" style="margin-top:0">
+              {b.impact_badge && <div class="card-tags"><span class="impact-badge">{b.impact_badge}</span></div>}
+              <div class="card-actions">
                 <a href={`/briefs/${b.slug}`} class="btn btn-sm btn-primary">Read Briefing</a>
                 <a href={b.source_url} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">Source ↗</a>
               </div>

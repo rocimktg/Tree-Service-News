@@ -113,6 +113,11 @@ const createdAt  = new Date(brief.created_at).toLocaleString("en-US", { dateStyl
 const publishedAt = brief.published_at
   ? new Date(brief.published_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
   : null;
+const fbPostedAt = brief.facebook_posted_at
+  ? new Date(brief.facebook_posted_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
+  : null;
+
+const siteUrl = import.meta.env.SITE || "https://treeservicenews.com";
 ---
 
 <AdminLayout title={`Edit: ${brief.title}`}>
@@ -268,4 +273,69 @@ const publishedAt = brief.published_at
     </div>
 
   </form>
+
+  <!-- ── Facebook publishing ─────────────────────────────── -->
+  {brief.status === "published" && (
+    <div class="card" style="margin-top:1.5rem">
+      <p class="section-label" style="margin-top:0">Facebook</p>
+
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap">
+        <button
+          id="fb-post-btn"
+          class="btn btn-facebook"
+          data-brief-id={brief.id}
+        >
+          Post to Facebook
+        </button>
+
+        <span id="fb-status" style="font-size:.875rem; color:#6b7280">
+          {fbPostedAt
+            ? `Last posted: ${fbPostedAt}`
+            : "Not yet posted to Facebook"}
+        </span>
+      </div>
+
+      {brief.slug && (
+        <p style="margin-top:.85rem; font-size:.78rem; color:#9ca3af">
+          Will post: <a href={`${siteUrl}/briefs/${brief.slug}`} target="_blank" rel="noopener" style="color:#1e3a2f">{siteUrl}/briefs/{brief.slug}</a>
+        </p>
+      )}
+    </div>
+  )}
+
 </AdminLayout>
+
+<script>
+  const btn = document.getElementById("fb-post-btn") as HTMLButtonElement | null;
+  const statusEl = document.getElementById("fb-status");
+  if (btn && statusEl) {
+    btn.addEventListener("click", async () => {
+      const briefId = btn.dataset.briefId;
+      btn.disabled = true;
+      btn.textContent = "Posting…";
+      try {
+        const res  = await fetch("/api/post-to-facebook", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ briefId: parseInt(briefId ?? "0") }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          btn.textContent = "✓ Posted";
+          statusEl.textContent = "Posted to Facebook just now.";
+          statusEl.style.color = "#065f46";
+        } else {
+          btn.disabled = false;
+          btn.textContent = "Post to Facebook";
+          statusEl.textContent = "Error: " + data.error;
+          statusEl.style.color = "#991b1b";
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = "Post to Facebook";
+        statusEl.textContent = "Network error — try again.";
+        statusEl.style.color = "#991b1b";
+      }
+    });
+  }
+</script>

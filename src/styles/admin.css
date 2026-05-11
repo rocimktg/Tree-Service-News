@@ -179,12 +179,13 @@ td a:hover { text-decoration: underline; }
 .btn:hover { opacity: .88; }
 .btn-sm { padding: .3rem .55rem; font-size: .78rem; }
 
-.btn-primary { background: #1e3a2f; color: #fff; }
-.btn-green   { background: #059669; color: #fff; }
-.btn-orange  { background: #f97316; color: #fff; }
-.btn-gray    { background: #9ca3af; color: #fff; }
-.btn-danger  { background: #dc2626; color: #fff; }
-.btn-ghost   { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+.btn-primary   { background: #1e3a2f; color: #fff; }
+.btn-green     { background: #059669; color: #fff; }
+.btn-orange    { background: #f97316; color: #fff; }
+.btn-gray      { background: #9ca3af; color: #fff; }
+.btn-danger    { background: #dc2626; color: #fff; }
+.btn-ghost     { background: transparent; border: 1px solid #d1d5db; color: #374151; }
+.btn-facebook  { background: #1877F2; color: #fff; }
 
 /* ── Form fields ─────────────────────────────────────────── */
 

@@ -185,19 +185,20 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.25; }
 
 .tag {
   display: inline-block;
-  background: var(--green);
-  color: #fff;
-  padding: .2rem .5rem;
+  background: transparent;
+  color: var(--green);
+  border: 1px solid rgba(30,58,47,.3);
+  padding: .13rem .42rem;
   border-radius: 3px;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .07em;
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .06em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
   line-height: 1.5;
 }
-a.tag:hover { background: var(--green-hover); }
+a.tag:hover { background: rgba(30,58,47,.07); }
 
 /* ── Top Story ───────────────────────────────────────────── */
 
@@ -341,12 +342,18 @@ a.tag:hover { background: var(--green-hover); }
   border-top: 1px solid var(--border);
   margin-top: 1rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .5rem;
+  flex-direction: column;
+  gap: .4rem;
 }
 .source-name { font-size: .74rem; color: var(--muted); }
+
+/* ── Card tag row (bottom of card) ──────────────────────── */
+
+.card-tags {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
 
 /* ── Roundup strip ───────────────────────────────────────── */
 
@@ -748,18 +755,19 @@ a.tag:hover { background: var(--green-hover); }
 
 .impact-badge {
   display: inline-block;
-  background: var(--orange);
-  color: #fff;
-  padding: .18rem .45rem;
+  background: #fff8f0;
+  color: #b45309;
+  border: 1px solid #fcd39c;
+  padding: .13rem .42rem;
   border-radius: 3px;
-  font-size: .62rem;
-  font-weight: 700;
-  letter-spacing: .06em;
+  font-size: .6rem;
+  font-weight: 600;
+  letter-spacing: .05em;
   text-transform: uppercase;
   white-space: nowrap;
   line-height: 1.5;
 }
-.impact-badge-sm { font-size: .58rem; padding: .14rem .38rem; }
+.impact-badge-sm { font-size: .57rem; padding: .1rem .34rem; }
 
 /* ── Card eyebrow (tag + badge row) ─────────────────────── */
 
@@ -826,18 +834,16 @@ a.tag:hover { background: var(--green-hover); }
 .article-module p { font-size: .9rem; line-height: 1.6; margin: 0; }
 
 .dwell-module {
-  background: var(--bg-alt);
+  background: var(--bg);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--green);
+  border-left: 2px solid var(--green);
+  padding: .6rem .9rem !important;
 }
+@media (min-width: 640px) { .dwell-module { padding: .6rem 1rem !important; } }
 .dwell-module .article-module-label { color: var(--green); }
+.dwell-module p { font-size: .875rem; }
 
-.related-angle-module {
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--orange);
-}
-.related-angle-module .article-module-label { color: var(--orange-dark); }
+.related-angle-module { display: none; }
 
 .wtf-module {
   background: #fef3c7;
@@ -845,6 +851,36 @@ a.tag:hover { background: var(--green-hover); }
   border-left: 3px solid #d97706;
 }
 .wtf-module .article-module-label { color: #92400e; }
+
+/* ── Article "Filed Under" tags ──────────────────────────── */
+
+.article-tags {
+  margin: 1.25rem 0;
+  padding-top: .85rem;
+  border-top: 1px solid var(--border);
+}
+.article-tags-label {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .45rem;
+}
+.article-tags-row {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.article-tag {
+  font-size: .72rem;
+  color: var(--muted);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: .15rem .45rem;
+  white-space: nowrap;
+}
 
 /* ── Related card hook line ──────────────────────────────── */
 
