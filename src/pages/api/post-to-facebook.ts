@@ -54,6 +54,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const pageId    = import.meta.env.FACEBOOK_PAGE_ID;
   const pageToken = import.meta.env.FACEBOOK_PAGE_TOKEN;
+  console.log("FB env check — PAGE_ID:", !!pageId, "PAGE_TOKEN:", !!pageToken);
   if (!pageId || !pageToken) {
     return new Response(
       JSON.stringify({ ok: false, error: "Facebook credentials not configured (FACEBOOK_PAGE_ID / FACEBOOK_PAGE_TOKEN)" }),
