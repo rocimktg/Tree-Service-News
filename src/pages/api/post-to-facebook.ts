@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { sql } from "../../lib/db.mjs";
 
-const SITE_URL = import.meta.env.SITE || "https://treeservicenews.com";
+const SITE_URL = import.meta.env.TSN_SITE_URL || "https://www.treeservicenews.com";
 
 function buildCaption(brief: any): string {
   let teaser = brief.card_blurb || brief.reader_hook || "";
